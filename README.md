@@ -68,7 +68,7 @@ For the [demo](sw/demo_parameter) and [benchmarking](sw/benchmark/) applications
 
 For synthesis we used Vivado/Vitis 2023.2, and for functional verification we used Questa 2024.3.
 
-Compiled simulation libraries for XPM and UNISIM are required, as the hardware design instantiates XPM memories and LUT primitives. For information on how to compile AMD/Xilinx simulation libraries for your simulator, see [UG900](https://docs.amd.com/r/en-US/ug900-vivado-logic-simulation/Compiling-Simulation-Libraries-Using-Vivado-IDE).
+Compiled simulation libraries for XPM and UNISIM are required, as the hardware design instantiates XPM memories and LUT primitives. For information on how to compile AMD/Xilinx simulation libraries for your simulator, see [UG900](https://docs.amd.com/r/en-US/ug900-vivado-logic-simulation/Compiling-Simulation-Libraries-Using-Vivado-IDE). In case of Questa, the respective `modelsim.ini` is required to reside within [hw/dv](hw/dv).
 
 ## Usage
 
@@ -83,7 +83,7 @@ python3 util/ntt_r4mdc.py $N $Q $PSI $W4 $LOGQ sparse $BFUS
 Example:
 
 ```bash
-python3 util/ntt_r4mdc.py 1024 134215681 282116 37361560 27 sparse 16
+python3 util/ntt_r4mdc.py 1024 33550337 3037 12759331 25 sparse 16
 ```
 
 The generated synthesis target is placed at:
@@ -101,7 +101,7 @@ Once generated, you can run synthesis or verification via FuseSoC.
 To synthesize a generated IP target, run:
 
 ```bash
-./synth_target.sh -s "aisec:ip:ntt_r4mdc_$Q_$N_$BFUS:0.1" $Q_$N_dit $Q_$N_dit $Q_$N_dit $Q_$N_dif
+./synth_target.sh -s "aisec:ip:ntt_r4mdc_$Q_$N_$BFUS:0.1" $Q_$N_dit $Q_$N_dit
 ```
 
 #### Verification
@@ -109,7 +109,7 @@ To synthesize a generated IP target, run:
 To verify a generated DV target via simulation, run:
 
 ```bash
-./verify_target.sh -s "aisec:dv:ntt_r4mdc_$Q_$N_$BFUS:0.1" $Q_$N_dit $Q_$N_dit $Q_$N_dit $Q_$N_dif
+./verify_target.sh -s "aisec:dv:ntt_r4mdc_$Q_$N_$BFUS:0.1" $Q_$N_dit $Q_$N_dit
 ```
 
 If you use a simulator other than Questa, adapt line 21 of [verify_target.sh](./verify_target.sh) accordingly.

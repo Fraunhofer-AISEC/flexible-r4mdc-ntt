@@ -253,5 +253,5 @@ To add a new optimized sparse‑reduction implementation, follow these steps:
 - Explore higher radices together with Fermat numbers ($2^{2^{k}} + 1$) as in [Kim et al.](https://eprint.iacr.org/2024/314).
 - Extend the framework for positive wrapped convolution and ZKPs.
 
-## Third-Party Code
-This code base contains AXI read and write master interfaces from [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/). Parts of the AXI slave interface were designed based on [ZipCPU](https://zipcpu.com/blog/2020/03/08/easyaxil.html) and [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/).
+## Third-Party Notices
+This code base contains AXI read and write master interfaces from [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/). Parts of the AXI slave interface were designed based on [ZipCPU](https://zipcpu.com/blog/2020/03/08/easyaxil.html) and [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/). The files residing within [sw/benchmark](sw/benchmark) and [sw/demo_paramter](sw/demo_paramter) contain code examples of [OpenFHE](https://github.com/openfheorg/openfhe-development) licensed under BSD 2-Clause License.

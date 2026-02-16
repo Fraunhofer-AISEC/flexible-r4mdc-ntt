@@ -1,0 +1,35 @@
+CAPI=2:
+name: "aisec:ip:ntt_r4mdc:0.1"
+description: "Radix-4 MDC NTT"
+
+filesets:
+  files_rtl:
+    depend:
+      - aisec:ip:prim_ntt
+    files:
+      - rtl/ntt_r4mdc_dif_stage_perm.sv
+      - rtl/ntt_r4mdc_dif_stage.sv
+      - rtl/ntt_r4mdc_dif_mdc.sv
+      - rtl/ntt_r4mdc_dif_4.sv
+      - rtl/ntt_r4mdc_dif_2.sv
+      - rtl/ntt_r4mdc_dif.sv
+      - rtl/ntt_r4mdc_dit_stage_perm.sv
+      - rtl/ntt_r4mdc_dit_stage.sv
+      - rtl/ntt_r4mdc_dit_mdc.sv
+      - rtl/ntt_r4mdc_dit_4.sv
+      - rtl/ntt_r4mdc_dit_2.sv
+      - rtl/ntt_r4mdc_dit.sv
+      - rtl/ntt_r4mdc_uni_stage_perm.sv
+      - rtl/ntt_r4mdc_uni_stage.sv
+      - rtl/ntt_r4mdc_uni_mdc.sv
+      - rtl/ntt_r4mdc_uni_4.sv
+      - rtl/ntt_r4mdc_uni_2.sv
+      - rtl/ntt_r4mdc_uni.sv
+      - rtl/ntt_r4mdc.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+    toplevel: ntt_r4mdc

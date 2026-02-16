@@ -1,0 +1,16 @@
+CAPI=2:
+name: "aisec:ip:common:0.1"
+description: "Common - Radix-4 MDC Design"
+
+filesets:
+  files_rtl:
+    files:
+      - rtl/shreg.sv
+      - rtl/fifo_wrapper.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+    toplevel: shreg

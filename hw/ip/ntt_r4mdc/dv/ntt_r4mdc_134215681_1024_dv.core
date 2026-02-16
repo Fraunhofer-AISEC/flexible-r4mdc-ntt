@@ -1,0 +1,167 @@
+CAPI=2:
+name: "aisec:dv:ntt_r4mdc_134215681_1024:0.1"
+description: "NTT DV (R4MDC BOTH)"
+
+filesets:
+  files_dv:
+    depend:
+      - aisec:dv:tb_pkg
+      - aisec:dv:ntt_r4mdc:0.1
+
+parameters:
+
+  TWIDDLE_MEM_PATH:
+    datatype: str
+    description: Twiddle ROM initialization file in vmem hex format
+    default: "../../../hw/mem/134215681_1024_16"
+    paramtype: vlogparam
+
+  LOG_FILE:
+    datatype: str
+    description: File location for log file
+    default: "../../../lololog.log"
+    paramtype: vlogparam
+
+  TEX_FILE:
+    datatype: str
+    description: File location to save results in .tex form
+    default: "../../../lololog.tex"
+    paramtype: vlogparam
+
+  NOF_BUTTERFLY_UNITS:
+    datatype: int
+    description: Number of parallel processing elements
+    default: 16
+    paramtype: vlogparam
+
+  DATA_WIDTH:
+    datatype: int
+    description: Width of data path
+    default: 27
+    paramtype: vlogparam
+
+  N:
+    datatype: int
+    description: Polynomial degree
+    default: 1024
+    paramtype: vlogparam
+
+  QINT:
+    datatype: int
+    description: Modulus
+    default: 134215681
+    paramtype: vlogparam
+
+  QDASH:
+    datatype: int
+    description: Constant for montgomery multiplication
+    default: 130021375
+    paramtype: vlogparam
+
+  W4:
+    datatype: int
+    description: 4th root of unity
+    default: 37361560
+    paramtype: vlogparam
+
+  LOG_R:
+    datatype: int
+    description: Constant for montgomery multiplication
+    default: 27
+    paramtype: vlogparam
+
+  QMU:
+    datatype: int
+    description: Constant for barrett multiplication
+    default: 134219775
+    paramtype: vlogparam
+
+  K:
+    datatype: int
+    description: Constant for barrett multiplication
+    default: 54
+    paramtype: vlogparam
+
+  REDUCTION:
+    datatype: str
+    description: Reduction method for multply operations
+    default: "LAZY"
+    paramtype: vlogparam
+
+  DELAY_BF:
+    datatype: int
+    description: Latency of butterfly unit implementation
+    default: 9
+    paramtype: vlogparam
+
+  DELAY_MULT:
+    datatype: int
+    description: Latency of multiplier implementation
+    default: 5
+    paramtype: vlogparam
+
+  TESTCASE_PATH:
+    datatype: str
+    description: Test vectors base path
+    default: "../../../hw/dv/testvectors/intt_134215681_1024/"
+    paramtype: vlogparam
+
+  TEST_NAME:
+    datatype: str
+    description: Test name
+    default: "ntt_134215681_1024_0"
+    paramtype: vlogparam
+
+  BUTTERFLY_TYPE:
+    datatype: str
+    description: Butterfly type
+    default: "GS"
+    paramtype: vlogparam
+
+targets:
+  default: &default_target
+    default_tool: modelsim
+    filesets:
+      - files_dv
+    toplevel: tb_ntt_r4mdc
+    tools:
+      modelsim:
+        vsim_options:
+          - -modelsimini ../../../hw/dv/modelsim.ini
+          - -voptargs="+acc"
+          - -work work
+          - -L xpm
+          - -L unisim
+
+  134215681_1024_dit:
+    <<: *default_target
+    parameters:
+      - N=1024
+      - DATA_WIDTH=27
+      - QINT=134215681
+      - QDASH=130021375
+      - W4=37361560
+      - NOF_BUTTERFLY_UNITS=16
+      - REDUCTION=SPARSE
+      - DELAY_BF=10
+      - DELAY_MULT=5
+      - BUTTERFLY_TYPE=CT
+      - TEST_NAME=ntt_134215681_1024_0
+      - TESTCASE_PATH=../../../hw/dv/testvectors/ntt_134215681_1024/
+      - TWIDDLE_MEM_PATH=../../../hw/mem/134215681_1024_16
+  134215681_1024_dif:
+    <<: *default_target
+    parameters:
+      - N=1024
+      - DATA_WIDTH=27
+      - QINT=134215681
+      - QDASH=130021375
+      - W4=37361560
+      - NOF_BUTTERFLY_UNITS=16
+      - REDUCTION=SPARSE
+      - DELAY_BF=11
+      - DELAY_MULT=5
+      - BUTTERFLY_TYPE=GS
+      - TEST_NAME=ntt_134215681_1024_0
+      - TESTCASE_PATH=../../../hw/dv/testvectors/intt_134215681_1024/
+      - TWIDDLE_MEM_PATH=../../../hw/mem/134215681_1024_16

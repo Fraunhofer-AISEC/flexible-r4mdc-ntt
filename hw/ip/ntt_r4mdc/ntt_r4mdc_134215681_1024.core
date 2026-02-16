@@ -1,0 +1,153 @@
+CAPI=2:
+name: "aisec:ip:ntt_r4mdc_134215681_1024:0.1"
+description: "NTT (R4MDC BOTH)"
+
+filesets:
+  files_rtl:
+    depend:
+      - aisec:ip:ntt_r4mdc
+  files_xilinx:
+    files:
+      - synth/constraints.xdc
+    file_type: xdc
+
+parameters:
+
+  TWIDDLE_MEM_PATH:
+    datatype: str
+    description: Twiddle ROM initialization file in vmem hex format
+    default: "../../../hw/mem/134215681_1024_16"
+    paramtype: vlogparam
+
+  NOF_BUTTERFLY_UNITS:
+    datatype: int
+    description: Number of parallel processing elements
+    default: 1
+    paramtype: vlogparam
+
+  DATA_WIDTH:
+    datatype: int
+    description: Width of data path
+    default: 27
+    paramtype: vlogparam
+
+  N:
+    datatype: int
+    description: Polynomial degree
+    default: 1024
+    paramtype: vlogparam
+
+  QINT:
+    datatype: int
+    description: Modulus
+    default: 134215681
+    paramtype: vlogparam
+
+  W4:
+    datatype: int
+    description: 4th root of unity
+    default: 37361560
+    paramtype: vlogparam
+
+  QDASH:
+    datatype: int
+    description: Constant for montgomery multiplication
+    default: 130021375
+    paramtype: vlogparam
+
+  LOG_R:
+    datatype: int
+    description: Constant for montgomery multiplication
+    default: 27
+    paramtype: vlogparam
+
+  QMU:
+    datatype: int
+    description: Constant for barrett multiplication
+    default: 134219775
+    paramtype: vlogparam
+
+  K:
+    datatype: int
+    description: Constant for barrett multiplication
+    default: 54
+    paramtype: vlogparam
+
+  REDUCTION:
+    datatype: str
+    description: Reduction method for multply operations
+    default: "SPARSE"
+    paramtype: vlogparam
+
+  DELAY_BF:
+    datatype: int
+    description: Latency of butterfly unit implementation
+    default: 11
+    paramtype: vlogparam
+
+  DELAY_MULT:
+    datatype: int
+    description: Latency of multiplier implementation
+    default: 5
+    paramtype: vlogparam
+
+  BUTTERFLY_TYPE:
+    datatype: str
+    description: File location for log file
+    default: "CT"
+    paramtype: vlogparam
+
+  BUTTERFLY_TYPE:
+    datatype: str
+    description: Butterfly type
+    default: "GS"
+    paramtype: vlogparam
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+    toplevel: ntt_r4mdc
+
+  134215681_1024_dit:
+    <<: *default_target
+    filesets:
+      - files_rtl
+      - files_xilinx
+    parameters:
+      - N=1024
+      - DATA_WIDTH=27
+      - QINT=134215681
+      - QDASH=130021375
+      - W4=37361560
+      - LOG_R=27
+      - NOF_BUTTERFLY_UNITS=16
+      - REDUCTION=SPARSE
+      - DELAY_BF=10
+      - DELAY_MULT=5
+      - BUTTERFLY_TYPE=CT
+      - TWIDDLE_MEM_PATH=../../../hw/mem/134215681_1024_16
+    tools:
+      vivado:
+        board_part: "xilinx.com:au55c:part0:1.0"
+  134215681_1024_dif:
+    <<: *default_target
+    filesets:
+      - files_rtl
+      - files_xilinx
+    parameters:
+      - N=1024
+      - DATA_WIDTH=27
+      - QINT=134215681
+      - QDASH=130021375
+      - W4=37361560
+      - LOG_R=27
+      - NOF_BUTTERFLY_UNITS=16
+      - REDUCTION=SPARSE
+      - DELAY_BF=11
+      - DELAY_MULT=5
+      - BUTTERFLY_TYPE=GS
+      - TWIDDLE_MEM_PATH=../../../hw/mem/134215681_1024_16
+    tools:
+      vivado:
+        board_part: "xilinx.com:au55c:part0:1.0"

@@ -1,0 +1,15 @@
+CAPI=2:
+name: "aisec:dv:tb_pkg:0.1"
+description: "Common - DV procedures for TBs"
+
+filesets:
+  files_rtl:
+    files:
+      - tb-generic/tb_generic_pkg.sv
+      - tb-generic/tb_axi_pkg.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl

@@ -1,0 +1,34 @@
+CAPI=2:
+name: "aisec:ip:arith:0.1"
+description: "Arithmetic"
+
+filesets:
+  files_rtl:
+    depend:
+      - aisec:ip:common
+    files:
+      - rtl/arith_pkg.sv
+      - rtl/csa.sv
+      - rtl/multiplier.sv
+      - rtl/mod_adder.sv
+      - rtl/mod_subtractor.sv
+      - rtl/mod_div2.sv
+      - rtl/sparse_reduction_33550337.sv
+      - rtl/sparse_reduction_134215681.sv
+      - rtl/sparse_reduction_268369921.sv
+      - rtl/sparse_reduction_18446744069414584321.sv
+      - rtl/sparse_reduction.sv
+      - rtl/sparse_multiplier.sv
+      - rtl/mod_multiplier.sv
+      - rtl/const_multiplier_75074761_268369921.sv
+      - rtl/const_multiplier_281474976710656_18446744069414584321.sv
+      - rtl/const_multiplier_37361560_134215681.sv
+      - rtl/const_multiplier_12759331_33550337.sv
+      - rtl/const_multiplier.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+    toplevel: sparse_multiplier

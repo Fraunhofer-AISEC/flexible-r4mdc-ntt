@@ -1,0 +1,301 @@
+{
+  "CGGI_STD128_25_DIT_1": {
+    "param": { 
+      "N" : 1024,
+      "Q" : 33550337,
+      "PSI": 3037,
+      "W4": 12759331
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "dit",
+      "parallelism" : 1,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "CGGI_STD128_25_DIT_4": {
+    "param": { 
+      "N" : 1024,
+      "Q" : 33550337,
+      "PSI": 3037,
+      "W4": 12759331
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "dit",
+      "parallelism" : 4,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "CGGI_STD128_25_DIT_16": {
+    "param": { 
+      "N" : 1024,
+      "Q" : 33550337,
+      "PSI": 3037,
+      "W4": 12759331
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "dit",
+      "parallelism" : 16,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "CGGI_STD128_25_DIF_1": {
+    "param": { 
+      "N" : 1024,
+      "Q" : 33550337,
+      "PSI": 3037,
+      "W4": 12759331
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "dif",
+      "parallelism" : 1,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "CGGI_STD128_25_DIF_4": {
+    "param": { 
+      "N" : 1024,
+      "Q" : 33550337,
+      "PSI": 3037,
+      "W4": 12759331
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "dif",
+      "parallelism" : 4,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "CGGI_STD128_25_DIF_16": {
+    "param": { 
+      "N" : 1024,
+      "Q" : 33550337,
+      "PSI": 3037,
+      "W4": 12759331
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "dif",
+      "parallelism" : 16,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "CKKS_COMPOSITE_SCALING_64_UNI_1": {
+    "param": { 
+      "N" : 4096,
+      "Q" : 18446744069414584321,
+      "PSI": 1532612707718625687,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 1,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "CKKS_COMPOSITE_SCALING_64_UNI_4": {
+    "param": { 
+      "N" : 4096,
+      "Q" : 18446744069414584321,
+      "PSI": 1532612707718625687,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 4,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "CKKS_COMPOSITE_SCALING_64_UNI_16": {
+    "param": { 
+      "N" : 4096,
+      "Q" : 18446744069414584321,
+      "PSI": 1532612707718625687,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 16,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "REF_4096_64_UNI_1": {
+    "param": { 
+      "N" : 4096,
+      "Q" : 18446744069414584321,
+      "PSI": 1532612707718625687,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 1,
+      "reduction" : "sparse",
+      "frequency" : 285
+    },
+    "platform":{
+      "fpga": "V7",
+    }
+  },
+
+  "REF_4096_64_UNI_4": {
+    "param": { 
+      "N" : 4096,
+      "Q" : 18446744069414584321,
+      "PSI": 1532612707718625687,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 4,
+      "reduction" : "sparse",
+      "frequency" : 222
+    },
+    "platform":{
+      "fpga": "V7",
+    }
+  },
+
+  "REF_4096_64_UNI_8": {
+    "param": { 
+      "N" : 4096,
+      "Q" : 18446744069414584321,
+      "PSI": 1532612707718625687,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 8,
+      "reduction" : "sparse",
+      "frequency" : 210
+    },
+    "platform":{
+      "fpga": "V7",
+    }
+  }
+
+  "REF_1024_28_UNI_1": {
+    "param": { 
+      "N" : 1024,
+      "Q" : 268369921,
+      "PSI": 3260661,
+      "W4": 75074761
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni",
+      "parallelism" : 1,
+      "reduction" : "sparse",
+      "frequency" : 357
+    },
+    "platform":{
+      "fpga": "V7",
+    }
+  },
+
+  "REF_1024_28_UNI_8": {
+    "param": { 
+      "N" : 1024,
+      "Q" : 268369921,
+      "PSI": 3260661,
+      "W4": 75074761
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 8,
+      "type" : "uni",
+      "parallelism" : 8,
+      "reduction" : "sparse",
+      "frequency" : 320
+    },
+    "platform":{
+      "fpga": "V7",
+    }
+  },
+
+  "REF_1024_28_UNI_16": {
+    "param": { 
+      "N" : 1024,
+      "Q" : 268369921,
+      "PSI": 3260661,
+      "W4": 75074761
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni",
+      "parallelism" : 16,
+      "reduction" : "sparse",
+      "frequency" : 277
+    },
+    "platform":{
+      "fpga": "V7",
+    }
+  }
+}

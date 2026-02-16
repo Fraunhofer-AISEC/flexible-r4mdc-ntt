@@ -1,0 +1,23 @@
+CAPI=2:
+name: "aisec:ip:axi:0.1"
+description: "AXI - FPGA Primitives"
+
+filesets:
+  files_rtl:
+    depend:
+      - aisec:ip:common
+    files:
+      - rtl/skidbuffer.sv
+      - rtl/example_counter.sv
+      - rtl/channel_sync_fsm.sv      
+      - rtl/axi_read_master.sv
+      - rtl/axi_write_master.sv
+      - rtl/axi2buf.sv
+      - rtl/buf2axi.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+    toplevel: buf2axi

@@ -1,0 +1,23 @@
+CAPI=2:
+name: "aisec:ip:prim_ntt:0.1"
+description: "Primitives Radix-4 NTT"
+
+filesets:
+  files_rtl:
+    depend:
+      - aisec:ip:arith
+    files:
+      - rtl/prim_ntt_r4ctbfu.sv
+      - rtl/prim_ntt_r4gsbfu.sv
+      - rtl/prim_ntt_r4bfu_uni.sv
+      - rtl/prim_ntt_twiddlerom.sv
+      - rtl/prim_ntt_r4ctbfu_stage_unrolled.sv
+      - rtl/prim_ntt_r4gsbfu_stage_unrolled.sv
+      - rtl/prim_ntt_r4uni_stage_unrolled.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+    toplevel: prim_ntt_r4gsbfu_stage_unrolled

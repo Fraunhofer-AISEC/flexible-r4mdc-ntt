@@ -118,14 +118,14 @@ def compute_log_q(q: int) -> int:
 def write_constraints_xdc(repo_root: Path, frequency_mhz) -> None:
     """
     Overwrite constraints.xdc with a single create_clock line using the
-    given frequency in MHz. Uses exactly two decimal places.
+    given frequency in MHz. Uses exactly three decimal places.
     """
     freq = float(frequency_mhz)
     period_ns = 1000.0 / freq
     half_ns = period_ns / 2.0
 
-    period_str = f"{period_ns:.2f}"
-    half_str = f"{half_ns:.2f}"
+    period_str = f"{period_ns:.3f}"
+    half_str = f"{half_ns:.3f}"
 
     constraints_path = repo_root / "hw" / "ip" / "ntt_r4mdc" / "synth" / "constraints.xdc"
     constraints_path.parent.mkdir(parents=True, exist_ok=True)

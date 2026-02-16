@@ -177,13 +177,13 @@ python3 util/ntt_r4mdc.py $N $Q $PSI $W4 $LOGQ sparse $BFUS
 To build the FPGA verification application for a `dit`/`dif` design run the command below.
 
 ```bash
-g++ -g -std=c++17 -I$XILINX_XRT/include -L$XILINX_XRT/lib -o sw/benchmark/test_top_ntt.exe sw/test/test_top_ntt.cpp -lxrt_coreutil -pthread
+g++ -g -std=c++17 -I$XILINX_XRT/include -L$XILINX_XRT/lib -o sw/test/test_top_ntt.exe sw/test/test_top_ntt.cpp -lxrt_coreutil -pthread
 ```
 
 To build the FPGA verification application for a `uni` design run the command below.
 
 ```bash
-g++ -g -std=c++17 -I$XILINX_XRT/include -L$XILINX_XRT/lib -o sw/benchmark/test_top_ntt_rns.exe sw/test/test_top_ntt_rns.cpp -lxrt_coreutil -pthread
+g++ -g -std=c++17 -I$XILINX_XRT/include -L$XILINX_XRT/lib -o sw/test/test_top_ntt_rns.exe sw/test/test_top_ntt_rns.cpp -lxrt_coreutil -pthread
 ```
 
 For the OpenFHE applications, please use the commands below.
@@ -209,11 +209,11 @@ To run applications, e.g. verify the `STD128Q` CGGI FPGA design and benchmark it
 To run application, e.g. verify the CKKS [Composite Scaling](https://github.com/openfheorg/openfhe-development/blob/main/src/pke/examples/simple-real-numbers-composite-scaling.cpp) FPGA design and benchmark it, execute the following commands.
 
 ```bash
-./sw/test/test_top_ntt_rns.exe -s "aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1" 18446744069414584321_4096_uni_opt u55c
+./sw/test/test_top_ntt_rns.exe -s "aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1" 18446744069414584321_4096_uni u55c
 ```
 
 ```bash
-./sw/benchmark/ckks/build/test -s "aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1" 18446744069414584321_4096_uni_opt u55c
+./sw/benchmark/ckks/build/test -s "aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1" 18446744069414584321_4096_uni u55c
 ```
 
 ## Other Parameter Sets and Primitive Roots of Unity

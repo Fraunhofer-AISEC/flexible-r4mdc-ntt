@@ -18,6 +18,18 @@ cmake_minimum_required (VERSION 3.5.1)
 
 project(demo CXX)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option( BUILD_STATIC "Set to ON to include static versions of the library" OFF)
+
+## Vitis
+find_package(OpenCL REQUIRED)
+find_package(XRT REQUIRED)
+find_package(OpenMP)
+
+if(NOT XRT_FOUND)
+  MESSAGE(FATAL_ERROR "XRT not found, please source XRT setup script before building")
+endif()
+
 option( BUILD_STATIC "Set to ON to include static versions of the library" OFF)
 
 find_package(OpenFHE CONFIG REQUIRED)
@@ -42,8 +54,23 @@ include_directories( ${OpenFHE_INCLUDE}/pke )
 include_directories( ${OpenFHE_INCLUDE}/binfhe )
 ### add directories for other OpenFHE modules as needed for your project
 
+## XRT
+include_directories( ${XRT_INCLUDE_DIRS} )
+
+## OpenCL
+include_directories( ${OpenCL_INCLUDE_DIRS} )
+
 link_directories( ${OpenFHE_LIBDIR} )
 link_directories( ${OPENMP_LIBRARIES} )
+
+## XRT
+link_directories( ${XRT_LIBS} )
+link_directories( xrt_coreutil )
+link_directories( pthread )
+link_directories( uuid )
+link_directories( ${CMAKE_DL_LIBS} )
+link_directories( /opt/xilinx/xrt/lib )
+
 if(BUILD_STATIC)
     set( CMAKE_EXE_LINKER_FLAGS "${OpenFHE_EXE_LINKER_FLAGS} -static")
     link_libraries( ${OpenFHE_STATIC_LIBRARIES} )
@@ -52,8 +79,22 @@ else()
     link_libraries( ${OpenFHE_SHARED_LIBRARIES} )
 endif()
 
+add_definitions(-DDISABLE_ABI_CHECK)
+
 ### ADD YOUR EXECUTABLE(s) HERE
 add_executable( test simple-real-numbers.cpp )
 ###
 ### EXAMPLE:
 ### add_executable( test demo-simple-example.cpp )
+
+target_include_directories(test PRIVATE
+  ${XRT_INCLUDE_DIRS}
+  )
+
+target_link_libraries(test PRIVATE
+  ${XRT_LIBS}
+  xrt_coreutil
+  pthread
+  uuid
+  ${CMAKE_DL_LIBS}
+  )

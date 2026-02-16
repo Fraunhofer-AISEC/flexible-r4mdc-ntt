@@ -1,37 +1,6 @@
-//==================================================================================
-// BSD 2-Clause License
-//
-// Copyright (c) 2014-2022, NJIT, Duality Technologies Inc. and other contributors
-//
-// All rights reserved.
-//
-// Author TPOC: contact@openfhe.org
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//
-// 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright notice,
-//    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//==================================================================================
-
-/*
-  Example for the FHEW scheme using the default bootstrapping method (GINX)
- */
+// Copyright Fraunhofer Institute for Applied and Integrated Security (AISEC).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
 
 #include "binfhecontext.h"
 
@@ -279,14 +248,14 @@ bool run_test(const std::string& core_id,
   run.set_arg(6,boCoeff3); 
 
   long long sum_duration = 0;
-  for (size_t j = 0; j < 10000; ++j){
+  for (size_t j = 0; j < 1000; ++j){
     auto start = std::chrono::steady_clock::now();
     run.start();
     run.wait();
     auto end = std::chrono::steady_clock::now();
     sum_duration += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
   }
-  auto avg_us_fwd_batch = static_cast<double>(sum_duration)/10000;
+  auto avg_us_fwd_batch = static_cast<double>(sum_duration)/1000;
   if (mode == "dit"){
     std::cout << "Average Batch NTT latency with HW: " << std::dec << avg_us_fwd_batch << " microseconds" << std::endl;
   } else {
@@ -386,7 +355,7 @@ int main(int argc, char** argv) {
 
     if (mode == "dit"){
         long long sum_duration = 0;
-        for (size_t j = 0; j < 10000; ++j){
+        for (size_t j = 0; j < 1000; ++j){
           std::vector<NativePoly> res(32,NativePoly(polyParams, Format::COEFFICIENT, true));
           for (size_t j = 0; j < 32; ++j){
             for (size_t i = 0; i < N; ++i) {
@@ -397,20 +366,18 @@ int main(int argc, char** argv) {
           // Benchmark Program Step 3: Calculate NTT in Software
           auto start = std::chrono::steady_clock::now();
           for (size_t j = 0; j < 32; ++j){
-            for (size_t i = 0; i < N; ++i) {
-                res[j].SetFormat(Format::EVALUATION);
-            }
+              res[j].SetFormat(Format::EVALUATION);
           }
           auto end = std::chrono::steady_clock::now();
           sum_duration += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
         }
-        auto avg_us_fwd_batch = static_cast<double>(sum_duration)/10000;
+        auto avg_us_fwd_batch = static_cast<double>(sum_duration)/1000;
       
         std::cout << "Average Batch NTT latency with SW: " << std::dec << avg_us_fwd_batch << " microseconds" << std::endl;
     }
     if (mode == "dif"){
         long long sum_duration = 0;
-        for (size_t j = 0; j < 10000; ++j){
+        for (size_t j = 0; j < 1000; ++j){
           std::vector<NativePoly> res(32,NativePoly(polyParams, Format::EVALUATION, true));
           for (size_t j = 0; j < 32; ++j){
             for (size_t i = 0; i < N; ++i) {
@@ -421,14 +388,12 @@ int main(int argc, char** argv) {
           // Benchmark Program Step 3: Calculate INTT in Software
           auto start = std::chrono::steady_clock::now();
           for (size_t j = 0; j < 32; ++j){
-            for (size_t i = 0; i < N; ++i) {
-                res[j].SetFormat(Format::COEFFICIENT);
-            }
+              res[j].SetFormat(Format::COEFFICIENT);
           }
           auto end = std::chrono::steady_clock::now();
           sum_duration += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
         }
-        auto avg_us_fwd_batch = static_cast<double>(sum_duration)/10000;
+        auto avg_us_fwd_batch = static_cast<double>(sum_duration)/1000;
       
         std::cout << "Average Batch INTT latency with SW: " << std::dec << avg_us_fwd_batch << " microseconds" << std::endl;
     }

@@ -1,248 +1,303 @@
-///==================================================================================
-// BSD 2-Clause License
-//
-// Copyright (c) 2025, Duality Technologies Inc. and other contributors
-//
-// All rights reserved.
-//
-// Author TPOC: contact@openfhe.org
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-//
-// 1. Redistributions of source code must retain the above copyright notice, this
-//    list of conditions and the following disclaimer.
-//
-// 2. Redistributions in binary form must reproduce the above copyright notice,
-//    this list of conditions and the following disclaimer in the documentation
-//    and/or other materials provided with the distribution.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//==================================================================================
-
-/*
-  Simple examples for CKKS
- */
-
-#define PROFILE
+// Copyright Fraunhofer Institute for Applied and Integrated Security (AISEC).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
 
 #include "openfhe.h"
-#include <vector>
-#include <iostream>
 
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include <string>
+#include <cstring>
+#include <optional>
+#include <filesystem>
+#include <chrono>
+#include <limits>
+#include <random>
+
+// XRT includes
+#include "xrt/xrt_bo.h"
+#include <experimental/xrt_xclbin.h>
+#include <experimental/xrt_ip.h>
+#include "xrt/xrt_device.h"
+#include "xrt/xrt_kernel.h"
+
+namespace fs = std::filesystem;
 using namespace lbcrypto;
 
-int main(int argc, char* argv[]) {
-    // Step 1: Setup CryptoContext
+// ----------------------------- Helpers ----------------------------------------
 
-    // A. Specify main parameters
-    /* A1) Multiplicative depth:
-   * The CKKS scheme we setup here will work for any computation
-   * that has a multiplicative depth equal to 'multDepth'.
-   * This is the maximum possible depth of a given multiplication,
-   * but not the total number of multiplications supported by the
-   * scheme.
-   *
-   * For example, computation f(x, y) = x^2 + x*y + y^2 + x + y has
-   * a multiplicative depth of 1, but requires a total of 3 multiplications.
-   * On the other hand, computation g(x_i) = x1*x2*x3*x4 can be implemented
-   * either as a computation of multiplicative depth 3 as
-   * g(x_i) = ((x1*x2)*x3)*x4, or as a computation of multiplicative depth 2
-   * as g(x_i) = (x1*x2)*(x3*x4).
-   *
-   * For performance reasons, it's generally preferable to perform operations
-   * in the shorted multiplicative depth possible.
-   */
-    uint32_t multDepth = 3;
+static void print_usage() {
+    std::cout
+        << "Usage:\n"
+        << "  ntt_goldilocks_bench.exe -s <core-id> <target> <platform> [--device <index|bdf>]\n\n"
+        << "Example:\n"
+        << "  ./ntt_goldilocks_bench.exe -s \"aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1\" "
+           "18446744069414584321_4096_uni u55c\n\n"
+        << "Arguments:\n"
+        << "  -s, --core    FuseSoC core ID (e.g., aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1)\n"
+        << "  <target>      parameterset (e.g., 18446744069414584321_4096_uni)\n"
+        << "  <platform>    u200 | u250 | u55c\n"
+        << "Options:\n"
+        << "  --device      XRT device index (0,1,...) or BDF (e.g., 0000:e2:00.1). "
+           "Currently ignored; device is hard-coded.\n";
+}
 
-    /* A2) Bit-length of scaling factor.
-   * CKKS works for real numbers, but these numbers are encoded as integers.
-   * For instance, real number m=0.01 is encoded as m'=round(m*D), where D is
-   * a scheme parameter called scaling factor. Suppose D=1000, then m' is 10 (an
-   * integer). Say the result of a computation based on m' is 130, then at
-   * decryption, the scaling factor is removed so the user is presented with
-   * the real number result of 0.13.
-   *
-   * Parameter 'scaleModSize' determines the bit-length of the scaling
-   * factor D, but not the scaling factor itself. The latter is implementation
-   * specific, and it may also vary between ciphertexts in certain versions of
-   * CKKS (e.g., in FLEXIBLEAUTO).
-   *
-   * Choosing 'scaleModSize' depends on the desired accuracy of the
-   * computation, as well as the remaining parameters like multDepth or security
-   * standard. This is because the remaining parameters determine how much noise
-   * will be incurred during the computation (remember CKKS is an approximate
-   * scheme that incurs small amounts of noise with every operation). The
-   * scaling factor should be large enough to both accommodate this noise and
-   * support results that match the desired accuracy.
-   */
-    uint32_t firstModSize = 90;
-    uint32_t scaleModSize = 73;
-
-    /* A3) Number of plaintext slots used in the ciphertext.
-   * CKKS packs multiple plaintext values in each ciphertext.
-   * The maximum number of slots depends on a security parameter called ring
-   * dimension. In this instance, we don't specify the ring dimension directly,
-   * but let the library choose it for us, based on the security level we
-   * choose, the multiplicative depth we want to support, and the scaling factor
-   * size.
-   *
-   * Please use method GetRingDimension() to find out the exact ring dimension
-   * being used for these parameters. Give ring dimension N, the maximum batch
-   * size is N/2, because of the way CKKS works.
-   */
-    uint32_t batchSize = 8;
-
-    /*
-    * The word size in bits of the target hardware architecture.
-    */
-    uint32_t registerWordSize = 26;
-
-    int argcCount = 1;
-    if (argc > 1) {
-        while (argcCount < argc) {
-            uint32_t paramValue = atoi(argv[argcCount]);
-            switch (argcCount) {
-                case 1:
-                    firstModSize = paramValue;
-                    std::cout << "Setting First Mod Size: " << firstModSize << std::endl;
-                    break;
-                case 2:
-                    scaleModSize = paramValue;
-                    std::cout << "Setting Scaling Mod Size: " << scaleModSize << std::endl;
-                    break;
-                case 3:
-                    registerWordSize = paramValue;
-                    std::cout << "Setting Register Word Size: " << registerWordSize << std::endl;
-                    break;
-                case 4:
-                    multDepth = paramValue;
-                    std::cout << "Setting Multiplicative Depth: " << multDepth << std::endl;
-                    break;
-                default:
-                    std::cout << "Invalid option" << std::endl;
-                    break;
-            }
-            argcCount += 1;
-            std::cout << "argcCount: " << argcCount << std::endl;
-        }
-        std::cout << "Complete !" << std::endl;
+static std::string sanitize_core_id(const std::string& core_id) {
+    std::string out = core_id;
+    for (auto& ch : out) {
+        if (ch == ':')
+            ch = '_';
     }
-    else {
-        std::cout << "Using default parameters" << std::endl;
-        std::cout << "First Mod Size: " << firstModSize << std::endl;
-        std::cout << "Scaling Mod Size: " << scaleModSize << std::endl;
-        std::cout << "Register Word Size: " << registerWordSize << std::endl;
-        std::cout << "Multiplicative Depth: " << multDepth << std::endl;
-        std::cout << "Usage: " << argv[0] << " [firstModSize] [scalingModSize] [registerWordSize] [multDepth]"
-                  << std::endl;
+    return out;
+}
+
+// Parse core-id like "aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1"
+// -> platform=u55c, q=18446744069414584321, n=4096, pes=8
+static bool parse_core_id(const std::string& core_id,
+                          std::string& platform,
+                          std::string& q,
+                          std::string& n,
+                          std::string& pes) {
+    auto last_colon = core_id.rfind(':');
+    std::string core_nover = (last_colon == std::string::npos) ? core_id : core_id.substr(0, last_colon);
+
+    auto pos = core_nover.find("top_ntt_");
+    if (pos == std::string::npos)
+        return false;
+    std::string tail = core_nover.substr(pos + std::string("top_ntt_").size());
+    // Expect tail: "<platform>_<q>_<n>_<pes>"
+    std::istringstream iss(tail);
+    std::string token;
+    std::vector<std::string> parts;
+    while (std::getline(iss, token, '_'))
+        parts.push_back(token);
+    if (parts.size() != 4)
+        return false;
+    platform = parts[0];
+    q        = parts[1];
+    n        = parts[2];
+    pes      = parts[3];
+    return true;
+}
+
+// From parameterset "<q>_<n>_<mode>" extract q, n, mode
+// mode is only used for kernel/xclbin naming (e.g., "uni", "uni_opt")
+static bool parse_parameterset(const std::string& parameterset,
+                               std::string& q,
+                               std::string& n,
+                               std::string& mode) {
+    std::istringstream iss(parameterset);
+    std::string token;
+    std::vector<std::string> parts;
+    while (std::getline(iss, token, '_'))
+        parts.push_back(token);
+    if (parts.size() < 3)
+        return false;
+    q    = parts[0];
+    n    = parts[1];
+    mode = parts[2];
+    for (size_t i = 3; i < parts.size(); ++i) {
+        mode += "_" + parts[i];
     }
+    return true;
+}
 
-    /* A4) Desired security level based on FHE standards.
-   * This parameter can take four values. Three of the possible values
-   * correspond to 128-bit, 192-bit, and 256-bit security, and the fourth value
-   * corresponds to "NotSet", which means that the user is responsible for
-   * choosing security parameters. Naturally, "NotSet" should be used only in
-   * non-production environments, or by experts who understand the security
-   * implications of their choices.
-   *
-   * If a given security level is selected, the library will consult the current
-   * security parameter tables defined by the FHE standards consortium
-   * (https://homomorphicencryption.org/introduction/) to automatically
-   * select the security parameters. Please see "TABLES of RECOMMENDED
-   * PARAMETERS" in  the following reference for more details:
-   * http://homomorphicencryption.org/wp-content/uploads/2018/11/HomomorphicEncryptionStandardv1.1.pdf
-   */
-    CCParams<CryptoContextCKKSRNS> parameters;
-    parameters.SetMultiplicativeDepth(multDepth);
-    parameters.SetFirstModSize(firstModSize);
-    parameters.SetScalingModSize(scaleModSize);
-    parameters.SetBatchSize(batchSize);
-    parameters.SetSecurityLevel(HEStd_NotSet);
-    parameters.SetRingDim(1 << 12);
-    parameters.SetScalingTechnique(COMPOSITESCALINGAUTO);
-    parameters.SetRegisterWordSize(registerWordSize);
+// Build short and long kernel names
+static std::string make_short_kernel_name(const std::string& n,
+                                          const std::string& mode,
+                                          const std::string& pes) {
+    return "ntt_" + n + "_" + mode + "_" + pes; // matches package_xo kernel_name
+}
+static std::string make_long_kernel_name(const std::string& parameterset,
+                                         const std::string& platform,
+                                         const std::string& pes) {
+    return "top_ntt_" + parameterset + "_" + platform + "_" + pes;
+}
+static std::string make_xclbin_basename(const std::string& parameterset,
+                                        const std::string& platform,
+                                        const std::string& pes) {
+    return "top_ntt_" + parameterset + "_" + platform + "_" + pes + ".xclbin";
+}
 
-    CryptoContext<DCRTPoly> cc     = GenCryptoContext(parameters);
-    const auto cryptoParamsCKKSRNS = std::dynamic_pointer_cast<CryptoParametersCKKSRNS>(cc->GetCryptoParameters());
-    std::cout << "Composite Degree: " << cryptoParamsCKKSRNS->GetCompositeDegree() << "\nPrime Modulus Size: "
-              << static_cast<float>(scaleModSize) / cryptoParamsCKKSRNS->GetCompositeDegree()
-              << "\nRegister Word Size: " << registerWordSize << std::endl;
+// Try to locate the xclbin file in common locations
+static std::optional<fs::path> find_xclbin(const std::string& core_id,
+                                           const std::string& target,
+                                           const std::string& xclbin_base) {
+    fs::path cwd      = fs::current_path();
+    std::string sanit = sanitize_core_id(core_id);
 
-    // Enable the features that you wish to use
-    cc->Enable(PKE);
-    cc->Enable(KEYSWITCH);
-    cc->Enable(LEVELEDSHE);
-    std::cout << "CKKS scheme is using ring dimension " << cc->GetRingDimension() << std::endl << std::endl;
-    // RNS moduli (q_i) for the CRT towers
-    auto elemParams = cc->GetElementParams();                 // DCRTPoly::Params
-    const auto& towers = elemParams->GetParams();             // vector of sub-params
+    std::vector<fs::path> candidates;
+    candidates.emplace_back(cwd / xclbin_base);
+    candidates.emplace_back(cwd / "xclbin" / xclbin_base);
+    candidates.emplace_back(cwd / "build" / sanit / (target + "-vivado") / xclbin_base);
 
-    std::cout << "CKKS us using RNS moduli q_i:\n";
-    for (size_t i = 0; i < towers.size(); ++i) {
-        std::cout << "  q[" << i << "] = " << towers[i]->GetModulus()  << std::endl;
-        // Root of unity for this modulus
-        // std::cout << "    rootOfUnity = " << towers[i]->GetRootOfUnity() << "\n";
+    for (const auto& p : candidates) {
+        if (fs::exists(p))
+            return p;
+    }
+    return std::nullopt;
+}
+
+// ---------------------------- HW benchmark -------------------------------------
+
+template <typename T>
+bool run_hw_benchmark(const std::string& core_id,
+                      const std::string& parameterset,
+                      const std::string& platform,
+                      const std::optional<std::string>& /*device_arg*/,
+                      size_t num_iterations) {
+    // Parse parameterset
+    std::string q_ps, n_ps, mode;
+    if (!parse_parameterset(parameterset, q_ps, n_ps, mode)) {
+        std::cerr << "ERROR: Invalid parameterset '" << parameterset
+                  << "'. Expected '<q>_<n>_<mode>'." << std::endl;
+        return false;
     }
 
-    // Number of polys in the batch
-    const size_t batchCount = 32;
-
-    using DugType = typename DCRTPoly::DugType; // uniform mod q
-    DugType dug;
-    long long sum_duration = 0;
-    if(true){
-    // Create batch of random RNS polynomials in coefficient domain
-    for (size_t j = 0; j < 1000; ++j){
-        std::vector<DCRTPoly> batch;
-        batch.reserve(batchCount);
-        for (size_t i = 0; i < batchCount; ++i) {
-            batch.emplace_back(dug, elemParams, Format::COEFFICIENT);
-        }
-        // Time forward NTT (COEFFICIENT -> EVALUATION) for the entire batch
-        auto t0 = std::chrono::high_resolution_clock::now();
-        for (auto& a : batch) {
-            a.SetFormat(EVALUATION);
-        }
-        auto t1 = std::chrono::high_resolution_clock::now();
-        sum_duration += std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
-      }
-      auto avg_us_fwd_batch = static_cast<double>(sum_duration)/1000;
-
-    // Time inverse NTT (EVALUATION -> COEFFICIENT) for the entire batch
-    sum_duration = 0;
-    for (size_t j = 0; j < 1000; ++j){
-        std::vector<DCRTPoly> batch;
-        batch.reserve(batchCount);
-        for (size_t i = 0; i < batchCount; ++i) {
-            batch.emplace_back(dug, elemParams, Format::EVALUATION);
-        }
-        auto t2 = std::chrono::high_resolution_clock::now();
-        for (auto& a : batch) {
-            a.SetFormat(COEFFICIENT);
-        }
-        auto t3 = std::chrono::high_resolution_clock::now();
-        sum_duration += std::chrono::duration_cast<std::chrono::microseconds>(t3 - t2).count();
+    // Parse core-id
+    std::string plat_ci, q_ci, n_ci, pes;
+    if (!parse_core_id(core_id, plat_ci, q_ci, n_ci, pes)) {
+        std::cerr << "ERROR: Could not parse core ID '" << core_id << "'." << std::endl;
+        return false;
     }
-    auto avg_us_inv_batch = static_cast<double>(sum_duration)/1000;
+    if (plat_ci != platform) {
+        std::cerr << "ERROR: Platform mismatch: core='" << plat_ci
+                  << "' CLI='" << platform << "'." << std::endl;
+        return false;
+    }
+    if (q_ci != q_ps || n_ci != n_ps) {
+        std::cerr << "ERROR: parameterset (" << q_ps << "_" << n_ps
+                  << ") does not match core-id (" << q_ci << "_" << n_ci << ")." << std::endl;
+        return false;
+    }
 
-    std::cout << "Average RNS Batch NTT latency with SW: " << std::dec << avg_us_fwd_batch << " microseconds" << std::endl;
-    std::cout << "Average RNS Batch INTT latency with SW: " << std::dec << avg_us_inv_batch << " microseconds" << std::endl;
-    }else{
+    // Build kernel/xclbin names
+    const std::string kernel_short = make_short_kernel_name(n_ps, mode, pes);
+    const std::string kernel_long  = make_long_kernel_name(parameterset, platform, pes);
+    const std::string xclbin_base  = make_xclbin_basename(parameterset, platform, pes);
+
+    // Locate xclbin
+    auto xclbin_path_opt = find_xclbin(core_id, parameterset, xclbin_base);
+    if (!xclbin_path_opt) {
+        std::cerr << "ERROR: Could not find xclbin '" << xclbin_base << "'. Searched:\n"
+                  << "  ./\n  ./xclbin/\n  ./build/<sanitized-core>/<target>-vivado/\n";
+        return false;
+    }
+    fs::path xclbin_path = *xclbin_path_opt;
+    std::cout << "Using xclbin: " << xclbin_path.string() << std::endl;
+
+    // Open device (currently hard-coded BDF, adjust as needed)
+    auto device = xrt::device("0000:e2:00.1");
+
+    std::cout << "Loading xclbin..." << std::endl;
+    auto uuid = device.load_xclbin(xclbin_path.string());
+
+    // Create kernel: try short name, then long name
+    xrt::kernel krnl;
+    try {
+        krnl = xrt::kernel(device, uuid, kernel_short, xrt::kernel::cu_access_mode::exclusive);
+        std::cout << "Kernel opened: " << kernel_short << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Warning: kernel '" << kernel_short << "' not found (" << e.what()
+                  << "). Trying '" << kernel_long << "'..." << std::endl;
+        try {
+            krnl = xrt::kernel(device, uuid, kernel_long, xrt::kernel::cu_access_mode::exclusive);
+            std::cout << "Kernel opened: " << kernel_long << std::endl;
+        } catch (const std::exception& e2) {
+            std::cerr << "ERROR: Could not open kernel by short or long name.\n"
+                      << "  short: " << kernel_short << "\n"
+                      << "  long : " << kernel_long << "\n"
+                      << "Reason: " << e2.what() << std::endl;
+            return false;
+        }
+    }
+
+    // Data size: n
+    const size_t batch_size = 32;
+    size_t data_size        = static_cast<size_t>(std::stoul(n_ps));
+    size_t vector_size_bytes = sizeof(T) * data_size;
+
+    // Allocate BOs (global memory, 4 ports)
+    auto boCoeff0 = xrt::bo(device, batch_size * vector_size_bytes / 4, 0);
+    auto boCoeff1 = xrt::bo(device, batch_size * vector_size_bytes / 4, 1);
+    auto boCoeff2 = xrt::bo(device, batch_size * vector_size_bytes / 4, 2);
+    auto boCoeff3 = xrt::bo(device, batch_size * vector_size_bytes / 4, 3);
+
+    auto boCoeff0_map = boCoeff0.map<T*>();
+    auto boCoeff1_map = boCoeff1.map<T*>();
+    auto boCoeff2_map = boCoeff2.map<T*>();
+    auto boCoeff3_map = boCoeff3.map<T*>();
+
+    // Initialize with dummy data
+    std::fill(boCoeff0_map, boCoeff0_map + batch_size * data_size / 4, static_cast<T>(0xFFFFFFFFFFFFFFFFULL));
+    std::fill(boCoeff1_map, boCoeff1_map + batch_size * data_size / 4, static_cast<T>(0xFFFFFFFFFFFFFFFFULL));
+    std::fill(boCoeff2_map, boCoeff2_map + batch_size * data_size / 4, static_cast<T>(0xFFFFFFFFFFFFFFFFULL));
+    std::fill(boCoeff3_map, boCoeff3_map + batch_size * data_size / 4, static_cast<T>(0xFFFFFFFFFFFFFFFFULL));
+
+    // Sync to device once; content is irrelevant for pure latency benchmark
+    boCoeff0.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+    boCoeff1.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+    boCoeff2.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+    boCoeff3.sync(XCL_BO_SYNC_BO_TO_DEVICE);
+
+    // Run both directions: config=0 (NTT), config=1 (INTT)
+    for (uint32_t config = 0; config <= 1; ++config) {
+        const char* label = (config == 0) ? "NTT" : "INTT";
+
+        auto run = xrt::run(krnl);
+        run.set_arg(0, 0x0);
+        run.set_arg(1, config); // config bit selects forward/inverse inside the kernel
+        run.set_arg(2, 0x0);
+        run.set_arg(3, boCoeff0);
+        run.set_arg(4, boCoeff1);
+        run.set_arg(5, boCoeff2);
+        run.set_arg(6, boCoeff3);
+
+        long long sum_duration = 0;
+        for (size_t j = 0; j < 1000; ++j){
+          auto start = std::chrono::steady_clock::now();
+          run.start();
+          run.wait();
+          auto end = std::chrono::steady_clock::now();
+          sum_duration += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        }
+        //auto avg_us_fwd_batch = static_cast<double>(sum_duration)/1000;
+        double avg_us = static_cast<double>(sum_duration) / 1000;
+        std::cout << "Average Batch " << label << " latency with HW: "
+                  << std::dec << avg_us << " microseconds" << std::endl;
+    }
+
+    // Optionally read back results if needed
+    boCoeff0.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+    boCoeff1.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+    boCoeff2.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+    boCoeff3.sync(XCL_BO_SYNC_BO_FROM_DEVICE);
+
+    return true;
+}
+
+// ---------------------------- SW benchmark -------------------------------------
+
+// Benchmarks forward and inverse NTT with OpenFHE NativePoly for Goldilocks prime
+static void run_sw_benchmark_goldilocks(std::size_t N,
+                                        std::size_t batch_size,
+                                        std::size_t num_iterations) {
 
     // Benchmarking NTT and INTT for Goldilocks Prime
     constexpr uint64_t Q64 = 18446744069414584321ULL; 
-    const uint32_t N = 4096;
     const uint32_t m = 2 * N;
+
+    // Initialize a random number generator
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, 1024);
+
+    using DugType = typename DCRTPoly::DugType; // uniform mod q
+    DugType dug;
+
+    long long sum_duration = 0;
 
     NativeInteger q(Q64);
     NativeInteger ru = RootOfUnity<NativeInteger>(m, q);
@@ -251,27 +306,29 @@ int main(int argc, char* argv[]) {
     auto polyParams = std::make_shared<Params>(m, q, ru);
 
     sum_duration = 0;
+
     for (size_t j = 0; j < 1000; ++j){
       std::vector<NativePoly> res(32,NativePoly(polyParams, Format::COEFFICIENT, true));
       for (size_t j = 0; j < 32; ++j){
         for (size_t i = 0; i < N; ++i) {
-            res[j][i] = i;
+            res[j][i] = distrib(gen);
         }
       }
 
       // Benchmark Program Step 3: Calculate NTT in Software
       auto t4 = std::chrono::steady_clock::now();
       for (size_t j = 0; j < 32; ++j){
-        for (size_t i = 0; i < N; ++i) {
-            res[j].SetFormat(Format::EVALUATION);
-        }
+        res[j].SetFormat(Format::EVALUATION);
       }
       auto t5 = std::chrono::steady_clock::now();
       sum_duration += std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count();
     }
+
     auto avg_us_fwd_batch_goldilock = static_cast<double>(sum_duration)/1000;
   
     std::cout << "Average Batch NTT latency with SW: " << std::dec << avg_us_fwd_batch_goldilock << " microseconds" << std::endl;
+
+
 
     sum_duration = 0;
     for (size_t j = 0; j < 1000; ++j){
@@ -284,9 +341,7 @@ int main(int argc, char* argv[]) {
       // Benchmark Program Step 3: Calculate INTT in Software
       auto t6 = std::chrono::steady_clock::now();
       for (size_t j = 0; j < 32; ++j){
-        for (size_t i = 0; i < N; ++i) {
-            res[j].SetFormat(Format::COEFFICIENT);
-        }
+        res[j].SetFormat(Format::COEFFICIENT);
       }
       auto t7 = std::chrono::steady_clock::now();
       sum_duration += std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count();
@@ -294,6 +349,100 @@ int main(int argc, char* argv[]) {
     auto avg_us_inv_batch_goldilock = static_cast<double>(sum_duration)/1000;
   
     std::cout << "Average Batch INTT latency with SW: " << std::dec << avg_us_inv_batch_goldilock << " microseconds" << std::endl;
-    }
-    return 0;
+
 }
+
+// ------------------------------- main -----------------------------------------
+
+int main(int argc, char** argv) {
+    if (argc < 4) {
+        print_usage();
+        return 1;
+    }
+
+    std::string core_id;
+    std::string parameterset;
+    std::string platform;
+    std::optional<std::string> device_opt;
+
+    // Simple CLI parse
+    int i = 1;
+    while (i < argc) {
+        std::string arg = argv[i];
+        if (arg == "-s" || arg == "--core") {
+            if (i + 1 >= argc) {
+                print_usage();
+                return 1;
+            }
+            core_id = argv[++i];
+        } else if (arg == "--device") {
+            if (i + 1 >= argc) {
+                print_usage();
+                return 1;
+            }
+            device_opt = argv[++i];
+        } else if (parameterset.empty()) {
+            parameterset = arg;
+        } else if (platform.empty()) {
+            platform = arg;
+        } else {
+            std::cerr << "Unexpected argument: " << arg << std::endl;
+            print_usage();
+            return 1;
+        }
+        ++i;
+    }
+
+    if (core_id.empty() || parameterset.empty() || platform.empty()) {
+        print_usage();
+        return 1;
+    }
+
+    if (platform != "u200" && platform != "u250" && platform != "u55c") {
+        std::cerr << "ERROR: Invalid platform '" << platform
+                  << "'. Allowed: u200, u250, u55c." << std::endl;
+        return 1;
+    }
+
+    // Extract q and n from parameterset to configure SW benchmark
+    std::string q_ps, n_ps, mode_ps;
+    if (!parse_parameterset(parameterset, q_ps, n_ps, mode_ps)) {
+        std::cerr << "ERROR: Invalid parameterset '" << parameterset
+                  << "'. Expected '<q>_<n>_<mode>'." << std::endl;
+        return 1;
+    }
+
+    constexpr uint64_t GOLDILOCKS_Q = 18446744069414584321ULL;
+    const std::string goldilocks_q_str = std::to_string(GOLDILOCKS_Q);
+    if (q_ps != goldilocks_q_str) {
+        std::cerr << "WARNING: q in parameterset (" << q_ps
+                  << ") does not match Goldilocks q="
+                  << goldilocks_q_str << ". Make sure this matches your bitstream."
+                  << std::endl;
+    }
+
+    size_t N = static_cast<size_t>(std::stoul(n_ps));
+    const size_t batch_size    = 32;
+    const size_t num_iterations_hw = 1000;  // adjust as desired
+    const size_t num_iterations_sw = 1000;  // adjust as desired
+
+    bool hw_ok = false;
+    try {
+        hw_ok = run_hw_benchmark<unsigned long long>(
+            core_id, parameterset, platform, device_opt, num_iterations_hw);
+    } catch (const std::exception& e) {
+        std::cerr << "Unhandled exception during HW benchmark: " << e.what() << std::endl;
+        return 3;
+    }
+
+    // SW reference benchmark (Goldilocks, same N and batch size)
+    try {
+        run_sw_benchmark_goldilocks(N, batch_size, num_iterations_sw);
+    } catch (const std::exception& e) {
+        std::cerr << "Unhandled exception during SW benchmark: " << e.what() << std::endl;
+        // Do not change HW result based on SW failure
+    }
+
+    return hw_ok ? 0 : 2;
+}
+

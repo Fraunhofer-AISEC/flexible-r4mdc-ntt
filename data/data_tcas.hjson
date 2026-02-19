@@ -252,7 +252,7 @@
       "type" : "uni",
       "parallelism" : 1,
       "reduction" : "sparse",
-      "frequency" : 357
+      "frequency" : 355
     },
     "platform":{
       "fpga": "V7",

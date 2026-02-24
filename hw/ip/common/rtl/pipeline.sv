@@ -19,8 +19,9 @@ module pipeline
     output  logic [DATA_WIDTH-1:0]      data_o 
 );
 
-    logic [DATA_WIDTH-1:0] data_d, data_q [0:STAGES-1];
-
+    logic [DATA_WIDTH-1:0] data_d [0:STAGES-1];
+    logic [DATA_WIDTH-1:0] data_q [0:STAGES-1];
+    
     generate;
         if (EN && RST) begin
             always_ff @(posedge clk_i) begin
@@ -70,6 +71,6 @@ module pipeline
       data_d[0] = data_i;
     end
 
-    assign data_o = data_q[STAGE-1];
+    assign data_o = data_q[STAGES-1];
     
 endmodule

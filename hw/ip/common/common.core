@@ -6,6 +6,7 @@ filesets:
   files_rtl:
     files:
       - rtl/shreg.sv
+      - rtl/pipeline.sv
       - rtl/fifo_wrapper.sv
     file_type: systemVerilogSource
 

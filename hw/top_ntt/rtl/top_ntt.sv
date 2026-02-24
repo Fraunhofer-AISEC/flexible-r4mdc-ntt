@@ -600,7 +600,7 @@ module top_ntt #(
         .coeff1_o(coeff1_buf2acc),
         .coeff2_o(coeff2_buf2acc),
         .coeff3_o(coeff3_buf2acc),
-        .coeff_valid_o(coeff0_val_buf2acc),
+        .coeff_valid_o(coeff_val_buf2acc),
         .sync_buf2acc_ready_o(coeff_sync_ready),
         .sync_buf2acc_done_o(ctrl_done_coeff),
 
@@ -619,7 +619,7 @@ module top_ntt #(
 
     // Pipeline to enable routing across SLRs
     generate;
-      for (int i=0; i<NOF_FIFO; ++i) begin
+      for (genvar i=0; i<NOF_FIFO; ++i) begin
           pipeline #(
               .DATA_WIDTH(DATA_WIDTH),
               .STAGES(7),
@@ -669,19 +669,6 @@ module top_ntt #(
               .data_o(coeff3_acc_in_q[i]) 
           );
           pipeline #(
-              .DATA_WIDTH(1),
-              .STAGES(7),
-              .EN(1'b0),
-              .RST(1'b0)
-          ) u_mem2acc_pipe_valid (
-              .clk_i(clk),
-              .data_i(coeff_val_acc_in),
-              .en_i(1'b0),
-              .rst_i(1'b0),
-              .data_o(coeff_val_acc_in_q) 
-          );
-
-          pipeline #(
               .DATA_WIDTH(DATA_WIDTH),
               .STAGES(7),
               .EN(1'b0),
@@ -729,27 +716,40 @@ module top_ntt #(
               .rst_i(1'b0),
               .data_o(coeff3_acc_out_q[i]) 
           );
-          pipeline #(
-              .DATA_WIDTH(1),
-              .STAGES(7),
-              .EN(1'b0),
-              .RST(1'b0)
-          ) u_acc2mem_pipe_valid (
-              .clk_i(clk),
-              .data_i(coeff_val_acc_out),
-              .en_i(1'b0),
-              .rst_i(1'b0),
-              .data_o(coeff_val_acc_out_q) 
-          );
       end
     endgenerate
 
+    pipeline #(
+        .DATA_WIDTH(1),
+        .STAGES(7),
+        .EN(1'b0),
+        .RST(1'b1)
+    ) u_mem2acc_pipe_valid (
+        .clk_i(clk),
+        .data_i(coeff_val_acc_in),
+        .en_i(1'b0),
+        .rst_i(rst),
+        .data_o(coeff_val_acc_in_q) 
+    );
+
+    pipeline #(
+        .DATA_WIDTH(1),
+        .STAGES(7),
+        .EN(1'b0),
+        .RST(1'b1)
+    ) u_acc2mem_pipe_valid (
+        .clk_i(clk),
+        .data_i(coeff_val_acc_out),
+        .en_i(1'b0),
+        .rst_i(rst),
+        .data_o(coeff_val_acc_out_q) 
+    );
 
     always_ff @(posedge clk) begin
       if (rst) begin
         coeff_val_mux <= 1'b0;
       end else begin
-        coeff_val_mux <= debug ? coeff0_val_buf2acc : coeff_val_acc2buf;
+        coeff_val_mux <= debug ? coeff_val_buf2acc : coeff_val_acc2buf;
       end
       coeff0_mux <= debug ? coeff0_buf2acc : coeff0_acc2buf;
       coeff1_mux <= debug ? coeff1_buf2acc : coeff1_acc2buf;

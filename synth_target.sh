@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Copyright Fraunhofer Institute for Applied and Integrated Security (AISEC).
+
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
+
 # SPDX-License-Identifier: Apache-2.0
 
 # synth_target.sh
@@ -61,29 +63,105 @@ make_tmp_tcl() {
 
   cat > vivado_commands.tcl <<'EOT'
 
-# Vivado will raise an error if impl_1 is launched when it is already done. So
+# Make Vivado raise an error if Timing is not met
 
-# check the progress first and only launch if it's not complete.
+set_msg_config -id {Timing 38-282} -new_severity {ERROR}
+
+# Additional timing-related messages to treat as errors
+
+set_msg_config -id {Timing 38-282} -new_severity {ERROR}
+set_msg_config -id {Timing 38-78} -new_severity {ERROR}
+
+# Check if impl_1 is already complete
 
 if { [get_property PROGRESS [get_runs impl_1]] != "100%"} {
-  # Vivado only outputs to stdout for jobs that are explicitly waited on with
-  # 'wait_on_run'. So launch and wait on synth then launch and wait on impl to
-  # get logging to stdout from both.
+  # Launch synthesis
   set_property -name {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} -value {-mode out_of_context} -objects [get_runs synth_1]
   launch_runs synth_1 -quiet
+  wait_on_run synth_1
+  
+  if { [get_property PROGRESS [get_runs synth_1]] != "100%"} {
+    puts "ERROR: Synthesis failed!"
+    exit 1
+  }
+  puts "Synthesis completed successfully"
 
+  # Launch implementation
   launch_runs impl_1
   wait_on_run impl_1
+  
+  if { [get_property PROGRESS [get_runs impl_1]] != "100%"} {
+    puts "ERROR: Implementation failed!"
+    exit 1
+  }
   puts "Implementation completed"
 }
 
-if { [get_property PROGRESS [get_runs impl_1]] != "100%"} {
-   puts "ERROR: Implementation and bitstream generation step failed."
-   exit 1
+# Check timing after implementation
+
+open_run impl_1
+
+# Generate timing summary report
+
+report_timing_summary -file timing_summary.rpt
+
+# Check for timing violations
+
+set wns [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]]
+set whs [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -hold]]
+
+puts "Worst Negative Slack (Setup): $wns"
+puts "Worst Hold Slack: $whs"
+
+if { $wns < 0 } {
+  puts "ERROR: Timing not met! Setup WNS = $wns ns"
+  exit 1
 }
+
+if { $whs < 0 } {
+  puts "ERROR: Timing not met! Hold WHS = $whs ns"
+  exit 1
+}
+
+puts "SUCCESS: All timing constraints met (WNS=$wns, WHS=$whs)"
+
+close_design
 EOT
 
   cat "$base_tcl" vivado_commands.tcl > tmp.tcl
+}
+
+check_vivado_log() {
+  # $1 = log file path
+  local log_file="$1"
+  local errors=0
+
+  if [ ! -f "$log_file" ]; then
+    echo "WARNING: Log file not found: $log_file"
+    return 0
+  fi
+
+  # Check for ERROR messages
+  if grep -qi "^ERROR:" "$log_file"; then
+    echo "ERROR found in Vivado log"
+    grep -i "^ERROR:" "$log_file" | head -5
+    errors=1
+  fi
+
+  # Check for timing violations in log
+  if grep -qi "Timing constraints are not met" "$log_file"; then
+    echo "ERROR: Timing constraints not met (found in log)"
+    errors=1
+  fi
+
+  # Check for critical warnings that should fail the build
+  if grep -qi "CRITICAL WARNING.*timing" "$log_file"; then
+    echo "ERROR: Critical timing warning found"
+    grep -i "CRITICAL WARNING.*timing" "$log_file" | head -3
+    errors=1
+  fi
+
+  return $errors
 }
 
 find_core_tcl() {
@@ -137,11 +215,11 @@ PROJECT_ROOT="$(pwd)"
 LOGDIR="${PROJECT_ROOT}/logs"
 mkdir -p "$LOGDIR"
 
-# convert setup name used by fusesoc -> build dir name (example: "aisec:ip:ntt_r4mdc:0.1" -> "aisec_ip_ntt_r4mdc_0.1")
+# convert setup name used by fusesoc -> build dir name
 
 SETUP_DIR="${SETUP//:/_}"
 
-# Extract PE count (PES) from SETUP_DIR; assumes ..._<PES>_<version>
+# Extract PE count (PES) from SETUP_DIR
 
 PES=""
 if [[ "$SETUP_DIR" == *_*_* ]]; then
@@ -159,7 +237,9 @@ EXIT_CODE=0
 # --- main loop -------------------------------------------------------------
 
 for TARGET in "${TARGETS[@]}"; do
+  echo "==============================================================================" | tee -a "$SUMMARY"
   echo "== TARGET: ${TARGET} ==" | tee -a "$SUMMARY"
+  echo "==============================================================================" | tee -a "$SUMMARY"
 
   FUSESOC_LOG="${LOGDIR}/${TARGET}.fusesoc.log"
   echo "Running fusesoc --cores-root . run --tool=${TOOL} --target=${TARGET} --no-export --setup \"${SETUP}\"" | tee -a "$SUMMARY"
@@ -219,26 +299,56 @@ for TARGET in "${TARGETS[@]}"; do
   # run vivado
   VIVADO_LOG="${LOGDIR}/${TARGET}.vivado.log"
   echo "Running Vivado (batch): tmp.tcl -> ${VIVADO_LOG}" | tee -a "$SUMMARY"
-  if vivado -mode batch -source tmp.tcl > "$VIVADO_LOG" 2>&1; then
-    echo "Vivado: OK" | tee -a "$SUMMARY"
+  
+  VIVADO_EXIT=0
+  if ! vivado -mode batch -source tmp.tcl > "$VIVADO_LOG" 2>&1; then
+    VIVADO_EXIT=$?
+    echo "Vivado: FAILED with exit code $VIVADO_EXIT" | tee -a "$SUMMARY"
+  fi
 
-  else
-    echo "Vivado: FAILED (see ${VIVADO_LOG})" | tee -a "$SUMMARY"
+  # Check log for errors even if Vivado returned 0
+  if ! check_vivado_log "$VIVADO_LOG"; then
+    echo "Vivado: ERRORS detected in log (see ${VIVADO_LOG})" | tee -a "$SUMMARY"
     EXIT_CODE=$(( EXIT_CODE == 0 ? 6 : EXIT_CODE ))
+  elif [ $VIVADO_EXIT -ne 0 ]; then
+    echo "Vivado: FAILED (exit code $VIVADO_EXIT, see ${VIVADO_LOG})" | tee -a "$SUMMARY"
+    EXIT_CODE=$(( EXIT_CODE == 0 ? 6 : EXIT_CODE ))
+  else
+    echo "Vivado: OK - Timing met" | tee -a "$SUMMARY"
   fi
 
   popd > /dev/null
 
-  # parse report
-  REPORT_NAME="${TARGET}"
-  if [ -n "$PES" ]; then
-    REPORT_NAME="${TARGET}_${PES}"
-  fi
+  # parse report (only if Vivado succeeded)
+  if [ $EXIT_CODE -eq 0 ] || [ ! -f "${BUILD_DIR}/${SETUP_DIR}.runs/impl_1/ntt_r4mdc_synth_wrapper_utilization_placed.rpt" ]; then
+    REPORT_NAME="${TARGET}"
+    if [ -n "$PES" ]; then
+      REPORT_NAME="${TARGET}_${PES}"
+    fi
 
-  python3 ${PROJECT_ROOT}/util/report/parse_fpga_report.py ${BUILD_DIR}/${SETUP_DIR}.runs/impl_1/ntt_r4mdc_synth_wrapper_utilization_placed.rpt -csv ${PROJECT_ROOT}/build/reports/${SETUP_DIR}/${TARGET}-vivado.csv -tex ${PROJECT_ROOT}/build/reports/${SETUP_DIR}/${TARGET}-vivado.tex -name "${REPORT_NAME}"
+    mkdir -p "${PROJECT_ROOT}/build/reports/${SETUP_DIR}"
+    
+    if [ -f "${BUILD_DIR}/${SETUP_DIR}.runs/impl_1/ntt_r4mdc_synth_wrapper_utilization_placed.rpt" ]; then
+      python3 "${PROJECT_ROOT}/util/report/parse_fpga_report.py" \
+        "${BUILD_DIR}/${SETUP_DIR}.runs/impl_1/ntt_r4mdc_synth_wrapper_utilization_placed.rpt" \
+        -csv "${PROJECT_ROOT}/build/reports/${SETUP_DIR}/${TARGET}-vivado.csv" \
+        -tex "${PROJECT_ROOT}/build/reports/${SETUP_DIR}/${TARGET}-vivado.tex" \
+        -name "${REPORT_NAME}"
+    else
+      echo "WARNING: Utilization report not found, skipping report parsing" | tee -a "$SUMMARY"
+    fi
+  fi
 
 done
 
-
+echo "==============================================================================" | tee -a "$SUMMARY"
 echo "Summary written to ${SUMMARY}"
-exit "$EXIT_CODE"
+echo "==============================================================================" | tee -a "$SUMMARY"
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "BUILD FAILED with exit code $EXIT_CODE"
+  exit "$EXIT_CODE"
+else
+  echo "BUILD SUCCESSFUL"
+  exit 0
+fi

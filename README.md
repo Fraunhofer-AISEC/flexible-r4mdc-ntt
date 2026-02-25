@@ -165,7 +165,7 @@ To generate the bitstreams for the AMD Alveo U55C FPGA, run the commands below. 
 ```
 
 ```bash
-./hw/top_ntt/util/gen_bitstream_top_ntt.sh -s "aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1" 18446744069414584321_4096_uni_opt u55c --freq 175
+./hw/top_ntt/util/gen_bitstream_top_ntt.sh -s "aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1" 18446744069414584321_4096_uni_opt u55c --freq 200
 ```
 
 For the bitstream generation to succeed, ensure that the corresponding targets and constants were generated beforehand via:

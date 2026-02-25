@@ -183,7 +183,7 @@ module buf2axi #(
             .CASCADE_HEIGHT(0),                         // DECIMAL
             .DOUT_RESET_VALUE("0"),                     // String
             .ECC_MODE("no_ecc"),                        // String
-            .FIFO_MEMORY_TYPE("auto"),                 // String
+            .FIFO_MEMORY_TYPE("uram"),                 // String
             .FIFO_READ_LATENCY(1),                      // DECIMAL
             .FIFO_WRITE_DEPTH(PIPELINE_LENGTH*FIFO_DEPTH_ACT),        // DECIMAL
             .FULL_RESET_VALUE(0),                       // DECIMAL

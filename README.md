@@ -165,7 +165,7 @@ To generate the bitstreams for the AMD Alveo U55C FPGA, run the commands below. 
 ```
 
 ```bash
-./hw/top_ntt/util/gen_bitstream_top_ntt.sh -s "aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1" 18446744069414584321_4096_uni_opt u55c --freq 175
+./hw/top_ntt/util/gen_bitstream_top_ntt.sh -s "aisec:fpga:top_ntt_u55c_18446744069414584321_4096_8:0.1" 18446744069414584321_4096_uni_opt u55c --freq 200
 ```
 
 For the bitstream generation to succeed, ensure that the corresponding targets and constants were generated beforehand via:
@@ -254,4 +254,4 @@ To add a new optimized sparse‑reduction implementation, follow these steps:
 - Extend the framework for positive wrapped convolution and ZKPs.
 
 ## Third-Party Notices
-This code base contains AXI read and write master interfaces from [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/). Parts of the AXI slave interface were designed based on [ZipCPU](https://zipcpu.com/blog/2020/03/08/easyaxil.html) and [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/). The files residing within [sw/benchmark](sw/benchmark) and [sw/demo_paramter](sw/demo_paramter) contain code examples of [OpenFHE](https://github.com/openfheorg/openfhe-development) licensed under BSD 2-Clause License.
+This code base contains AXI read and write master interfaces from [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/). Parts of the AXI slave interface were designed based on [ZipCPU](https://zipcpu.com/blog/2020/03/08/easyaxil.html) and [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/). The files residing within [sw/benchmark](sw/benchmark) and [sw/demo_paramter](sw/demo_paramter) contain code examples of [OpenFHE](https://github.com/openfheorg/openfhe-development) licensed under BSD 2-Clause License. The file [hw/axi/rtl/skidbuffer.sv](hw/axi/rtl/skidbuffer.sv) is taken from [ZipCPU](https://github.com/ZipCPU/wb2axip).

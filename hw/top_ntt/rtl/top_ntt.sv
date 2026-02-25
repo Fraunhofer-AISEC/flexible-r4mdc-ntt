@@ -323,6 +323,11 @@ module top_ntt #(
     logic [DATA_WIDTH-1:0] coeff2_acc_in [NOF_FIFO-1:0];
     logic [DATA_WIDTH-1:0] coeff3_acc_in [NOF_FIFO-1:0];
 
+    logic [DATA_WIDTH-1:0] coeff0_acc_in_q [NOF_FIFO-1:0];
+    logic [DATA_WIDTH-1:0] coeff1_acc_in_q [NOF_FIFO-1:0];
+    logic [DATA_WIDTH-1:0] coeff2_acc_in_q [NOF_FIFO-1:0];
+    logic [DATA_WIDTH-1:0] coeff3_acc_in_q [NOF_FIFO-1:0];
+
     // Coefficient accelerator 2 buffer
     logic [DATA_WIDTH_FROM_BUFFER-1:0] coeff0_acc2buf [NOF_FIFO-1:0];
     logic [DATA_WIDTH_FROM_BUFFER-1:0] coeff1_acc2buf [NOF_FIFO-1:0];
@@ -337,27 +342,19 @@ module top_ntt #(
     logic [DATA_WIDTH_FROM_BUFFER-1:0] coeff3_mux [NOF_FIFO-1:0];
     logic coeff_val_mux;
 
-
     logic [DATA_WIDTH-1:0] coeff0_acc_out [NOF_FIFO-1:0];
     logic [DATA_WIDTH-1:0] coeff1_acc_out [NOF_FIFO-1:0];
     logic [DATA_WIDTH-1:0] coeff2_acc_out [NOF_FIFO-1:0];
     logic [DATA_WIDTH-1:0] coeff3_acc_out [NOF_FIFO-1:0];
 
-    logic coeff0_val_buf2acc, coeff1_val_buf2acc, coeff2_val_buf2acc, coeff3_val_buf2acc;
+    logic [DATA_WIDTH-1:0] coeff0_acc_out_q [NOF_FIFO-1:0];
+    logic [DATA_WIDTH-1:0] coeff1_acc_out_q [NOF_FIFO-1:0];
+    logic [DATA_WIDTH-1:0] coeff2_acc_out_q [NOF_FIFO-1:0];
+    logic [DATA_WIDTH-1:0] coeff3_acc_out_q [NOF_FIFO-1:0];
 
-    always_comb begin
-      for (int i=0; i<NOF_FIFO; ++i) begin
-          coeff0_acc_in[i] = coeff0_buf2acc[i][DATA_WIDTH-1:0];
-          coeff1_acc_in[i] = coeff1_buf2acc[i][DATA_WIDTH-1:0];
-          coeff2_acc_in[i] = coeff2_buf2acc[i][DATA_WIDTH-1:0];
-          coeff3_acc_in[i] = coeff3_buf2acc[i][DATA_WIDTH-1:0];
-
-          coeff0_acc2buf[i] = coeff0_acc_out[i];
-          coeff1_acc2buf[i] = coeff1_acc_out[i];
-          coeff2_acc2buf[i] = coeff2_acc_out[i];
-          coeff3_acc2buf[i] = coeff3_acc_out[i];
-      end
-    end
+    logic coeff_val_buf2acc;
+    logic coeff_val_acc_out, coeff_val_acc_out_q;
+    logic coeff_val_acc_in, coeff_val_acc_in_q;
 
     // Control wrapper wires
     logic coeff_val_acc2mux;
@@ -368,6 +365,26 @@ module top_ntt #(
     logic cnt_fifo_en;
     logic read_coeff_done;
     logic start;
+
+    always_comb begin
+      cnt_en_acc2mem = coeff_val_acc2buf;
+      cnt_en_mem2acc = coeff_val_acc_in_q;
+      for (int i=0; i<NOF_FIFO; ++i) begin
+          coeff0_acc_in[i] = coeff0_buf2acc[i][DATA_WIDTH-1:0];
+          coeff1_acc_in[i] = coeff1_buf2acc[i][DATA_WIDTH-1:0];
+          coeff2_acc_in[i] = coeff2_buf2acc[i][DATA_WIDTH-1:0];
+          coeff3_acc_in[i] = coeff3_buf2acc[i][DATA_WIDTH-1:0];
+      end
+      coeff_val_acc_in = coeff_val_buf2acc;
+      for (int i=0; i<NOF_FIFO; ++i) begin
+          coeff0_acc2buf[i] = coeff0_acc_out_q[i];
+          coeff1_acc2buf[i] = coeff1_acc_out_q[i];
+          coeff2_acc2buf[i] = coeff2_acc_out_q[i];
+          coeff3_acc2buf[i] = coeff3_acc_out_q[i];
+      end
+      coeff_val_acc2buf = coeff_val_acc_out_q;
+    end
+
 
     always_ff @(posedge  clk) begin
       coeff0_addr_offset_d <= coeff0_addr_offset;
@@ -583,7 +600,7 @@ module top_ntt #(
         .coeff1_o(coeff1_buf2acc),
         .coeff2_o(coeff2_buf2acc),
         .coeff3_o(coeff3_buf2acc),
-        .coeff_valid_o(coeff0_val_buf2acc),
+        .coeff_valid_o(coeff_val_buf2acc),
         .sync_buf2acc_ready_o(coeff_sync_ready),
         .sync_buf2acc_done_o(ctrl_done_coeff),
 
@@ -600,13 +617,139 @@ module top_ntt #(
         .sync_acc2buf_done_o(ctrl_done_acc)
     );
 
+    // Pipeline to enable routing across SLRs
+    generate;
+      for (genvar i=0; i<NOF_FIFO; ++i) begin
+          pipeline #(
+              .DATA_WIDTH(DATA_WIDTH),
+              .STAGES(7),
+              .EN(1'b0),
+              .RST(1'b0)
+          ) u_mem2acc_pipe_0 (
+              .clk_i(clk),
+              .data_i(coeff0_acc_in[i]),
+              .en_i(1'b0),
+              .rst_i(1'b0),
+              .data_o(coeff0_acc_in_q[i]) 
+          );
+          pipeline #(
+              .DATA_WIDTH(DATA_WIDTH),
+              .STAGES(7),
+              .EN(1'b0),
+              .RST(1'b0)
+          ) u_mem2acc_pipe_1 (
+              .clk_i(clk),
+              .data_i(coeff1_acc_in[i]),
+              .en_i(1'b0),
+              .rst_i(1'b0),
+              .data_o(coeff1_acc_in_q[i]) 
+          );
+          pipeline #(
+              .DATA_WIDTH(DATA_WIDTH),
+              .STAGES(7),
+              .EN(1'b0),
+              .RST(1'b0)
+          ) u_mem2acc_pipe_2 (
+              .clk_i(clk),
+              .data_i(coeff2_acc_in[i]),
+              .en_i(1'b0),
+              .rst_i(1'b0),
+              .data_o(coeff2_acc_in_q[i]) 
+          );
+          pipeline #(
+              .DATA_WIDTH(DATA_WIDTH),
+              .STAGES(7),
+              .EN(1'b0),
+              .RST(1'b0)
+          ) u_mem2acc_pipe_3 (
+              .clk_i(clk),
+              .data_i(coeff3_acc_in[i]),
+              .en_i(1'b0),
+              .rst_i(1'b0),
+              .data_o(coeff3_acc_in_q[i]) 
+          );
+          pipeline #(
+              .DATA_WIDTH(DATA_WIDTH),
+              .STAGES(7),
+              .EN(1'b0),
+              .RST(1'b0)
+          ) u_acc2mem_pipe_0 (
+              .clk_i(clk),
+              .data_i(coeff0_acc_out[i]),
+              .en_i(1'b0),
+              .rst_i(1'b0),
+              .data_o(coeff0_acc_out_q[i]) 
+          );
+          pipeline #(
+              .DATA_WIDTH(DATA_WIDTH),
+              .STAGES(7),
+              .EN(1'b0),
+              .RST(1'b0)
+          ) u_acc2mem_pipe_1 (
+              .clk_i(clk),
+              .data_i(coeff1_acc_out[i]),
+              .en_i(1'b0),
+              .rst_i(1'b0),
+              .data_o(coeff1_acc_out_q[i]) 
+          );
+          pipeline #(
+              .DATA_WIDTH(DATA_WIDTH),
+              .STAGES(7),
+              .EN(1'b0),
+              .RST(1'b0)
+          ) u_acc2mem_pipe_2 (
+              .clk_i(clk),
+              .data_i(coeff2_acc_out[i]),
+              .en_i(1'b0),
+              .rst_i(1'b0),
+              .data_o(coeff2_acc_out_q[i]) 
+          );
+          pipeline #(
+              .DATA_WIDTH(DATA_WIDTH),
+              .STAGES(7),
+              .EN(1'b0),
+              .RST(1'b0)
+          ) u_acc2mem_pipe_3 (
+              .clk_i(clk),
+              .data_i(coeff3_acc_out[i]),
+              .en_i(1'b0),
+              .rst_i(1'b0),
+              .data_o(coeff3_acc_out_q[i]) 
+          );
+      end
+    endgenerate
 
+    pipeline #(
+        .DATA_WIDTH(1),
+        .STAGES(7),
+        .EN(1'b0),
+        .RST(1'b1)
+    ) u_mem2acc_pipe_valid (
+        .clk_i(clk),
+        .data_i(coeff_val_acc_in),
+        .en_i(1'b0),
+        .rst_i(rst),
+        .data_o(coeff_val_acc_in_q) 
+    );
+
+    pipeline #(
+        .DATA_WIDTH(1),
+        .STAGES(7),
+        .EN(1'b0),
+        .RST(1'b1)
+    ) u_acc2mem_pipe_valid (
+        .clk_i(clk),
+        .data_i(coeff_val_acc_out),
+        .en_i(1'b0),
+        .rst_i(rst),
+        .data_o(coeff_val_acc_out_q) 
+    );
 
     always_ff @(posedge clk) begin
       if (rst) begin
         coeff_val_mux <= 1'b0;
       end else begin
-        coeff_val_mux <= debug ? coeff0_val_buf2acc : coeff_val_acc2buf;
+        coeff_val_mux <= debug ? coeff_val_buf2acc : coeff_val_acc2buf;
       end
       coeff0_mux <= debug ? coeff0_buf2acc : coeff0_acc2buf;
       coeff1_mux <= debug ? coeff1_buf2acc : coeff1_acc2buf;
@@ -640,19 +783,17 @@ module top_ntt #(
         .clk_i(clk),
         .rst_i(rst),
         .intt_i(intt),
-        .data0_i(coeff0_acc_in),
-        .data1_i(coeff1_acc_in),
-        .data2_i(coeff2_acc_in),
-        .data3_i(coeff3_acc_in),
-        .data_valid_i(coeff0_val_buf2acc),
+        .data0_i(coeff0_acc_in_q),
+        .data1_i(coeff1_acc_in_q),
+        .data2_i(coeff2_acc_in_q),
+        .data3_i(coeff3_acc_in_q),
+        .data_valid_i(coeff_val_acc_in_q),
 
         .data0_o(coeff0_acc_out),
         .data1_o(coeff1_acc_out),
         .data2_o(coeff2_acc_out),
         .data3_o(coeff3_acc_out),
-        .data_valid_o(coeff_val_acc2buf)
+        .data_valid_o(coeff_val_acc_out)
     );
-    assign cnt_en_acc2mem = coeff_val_acc2buf;
-    assign cnt_en_mem2acc = coeff0_val_buf2acc;
 
 endmodule

@@ -1,0 +1,155 @@
+{
+  "CKKS_64_UNI_1": {
+    "param": { 
+      "N" : 16384,
+      "Q" : 18446744069414584321,
+      "PSI": 17776499369601055404,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 1,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+
+  "CKKS_64_UNI_4": {
+    "param": { 
+      "N" : 16384,
+      "Q" : 18446744069414584321,
+      "PSI": 17776499369601055404,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 4,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+  "CKKS_64_UNI_8": {
+    "param": { 
+      "N" : 16384,
+      "Q" : 18446744069414584321,
+      "PSI": 17776499369601055404,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 8,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+  "CKKS_64_UNI_16": {
+    "param": { 
+      "N" : 16384,
+      "Q" : 18446744069414584321,
+      "PSI": 17776499369601055404,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 16,
+      "reduction" : "sparse",
+      "frequency" : 275
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+  "CKKS_64_UNI_1_32768": {
+    "param": { 
+      "N" : 32768,
+      "Q" : 18446744069414584321,
+      "PSI": 6115771955107415310,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 1,
+      "reduction" : "sparse",
+      "frequency" : 300
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+  "CKKS_64_UNI_4_32768": {
+    "param": { 
+      "N" : 32768,
+      "Q" : 18446744069414584321,
+      "PSI": 6115771955107415310,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 4,
+      "reduction" : "sparse",
+      "frequency" : 275
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+  "CKKS_64_UNI_8_32768": {
+    "param": { 
+      "N" : 32768,
+      "Q" : 18446744069414584321,
+      "PSI": 6115771955107415310,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 8,
+      "reduction" : "sparse",
+      "frequency" : 250
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  },
+  "CKKS_64_UNI_16_32768": {
+    "param": { 
+      "N" : 32768,
+      "Q" : 18446744069414584321,
+      "PSI": 6115771955107415310,
+      "W4": 281474976710656
+    },
+    "cfg": {
+      "architecture" : "mdc",
+      "radix" : 4,
+      "type" : "uni_opt",
+      "parallelism" : 16,
+      "reduction" : "sparse",
+      "frequency" : 250
+    },
+    "platform":{
+      "fpga": "u55c",
+    }
+  }
+}

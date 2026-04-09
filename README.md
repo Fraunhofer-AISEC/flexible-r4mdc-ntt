@@ -122,6 +122,8 @@ If you use a simulator other than Questa, adapt line 21 of [verify_target.sh](./
 | CKKS       | 4096 | 18446744069414584321  | 1532612707718625687   | 281474976710656  |
 | Comparison | 1024 |         268369921     |              3260661  |        75074761  |
 
+Results for these parameter sets, as well as additional parameter sets can be found in [data](data/).
+
 ## Reproduction of Results
 
 The [data](data/) directory contains the data used in the paper, the data‑collection script, and the HJSON configuration files describing the design points.

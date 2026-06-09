@@ -1,6 +1,6 @@
 # Flexible Parallel Radix-4 Streaming NTT for FHE
 
-This repository contains the source code for the paper “Flexible Parallel Radix‑4 MDC NTT for FHE”. It provides an RTL library to implement radix‑4 multipath delay commutator (MDC) NTTs, as well as a framework to automatically generate twiddle factors, constants, test vectors, and core files for use with [FuseSoC](https://github.com/olofk/fusesoc).
+This repository contains the source code for the paper [Flexible Parallel Radix‑4 MDC NTT for FHE](https://doi.org/10.1109/TCSII.2026.3700928). It provides an RTL library to implement radix‑4 multipath delay commutator (MDC) NTTs, as well as a framework to automatically generate twiddle factors, constants, test vectors, and core files for use with [FuseSoC](https://github.com/olofk/fusesoc).
 
 The hardware design is based on a radix‑4 MDC. It is flexible and supports different primes $Q$ and polynomial sizes $N$. Moreover, the number of compute cores per NTT stage is scalable, making it suitable for a variety of use cases and design requirements. The figure below shows two consecutive radix‑4 MDC stages with two parallel compute cores per stage.
 
@@ -255,3 +255,18 @@ To add a new optimized sparse‑reduction implementation, follow these steps:
 
 ## Third-Party Notices
 This code base contains AXI read and write master interfaces from [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/). Parts of the AXI slave interface were designed based on [ZipCPU](https://zipcpu.com/blog/2020/03/08/easyaxil.html) and [Xilinx Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials/). The files residing within [sw/benchmark](sw/benchmark) and [sw/demo_paramter](sw/demo_paramter) contain code examples of [OpenFHE](https://github.com/openfheorg/openfhe-development) licensed under BSD 2-Clause License. The file [hw/axi/rtl/skidbuffer.sv](hw/axi/rtl/skidbuffer.sv) is taken from [ZipCPU](https://github.com/ZipCPU/wb2axip).
+
+## Bibliography
+When referring to this work, please consider using the following bibTeX excerpt:
+```
+@ARTICLE{11553462,
+  author={Stelzer, Tobias and Karl, Patrick and Zankl, Andreas},
+  journal={IEEE Transactions on Circuits and Systems II: Express Briefs}, 
+  title={Flexible Parallel Radix-4 MDC NTT for FHE}, 
+  year={2026},
+  volume={},
+  number={},
+  pages={1-1},
+  keywords={Fully homomorphic encryption;number theoretic transform;multipath delay commutator;radix-4;CKKS;CGGI},
+  doi={10.1109/TCSII.2026.3700928}}
+```
